@@ -1,0 +1,10 @@
+openai-whisper
+google-genai
+pydantic
+pandas
+rapidfuzz
+jiwer
+openpyxl
+python-docx
+ipywidgets
+torch
