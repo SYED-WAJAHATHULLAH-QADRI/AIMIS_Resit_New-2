@@ -243,24 +243,33 @@ if st.button("Generate meeting output"):
         try:
             with st.spinner("Generating output..."):
                 started = time.perf_counter()
-                response = genai.Client(api_key=api_key).models.generate_content(
-                    model=model_name,
-                    contents=(
-                        PROMPTS[prompt_type]
-                        + "\n\nMEETING TRANSCRIPT:\n"
-                        + reviewed_text
-                    ),
-                    config=types.GenerateContentConfig(
-                        temperature=0.2,
-                        response_mime_type="application/json",
-                        response_schema=api_schema(
-                            MeetingOutput.model_json_schema()
+
+                # Create a fresh Gemini client for this request.
+                client = genai.Client(api_key=api_key)
+
+                try:
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=(
+                            PROMPTS[prompt_type]
+                            + "\n\nMEETING TRANSCRIPT:\n"
+                            + reviewed_text
+                        ),
+                        config=types.GenerateContentConfig(
+                            temperature=0.2,
+                            response_mime_type="application/json",
+                            response_schema=api_schema(
+                                MeetingOutput.model_json_schema()
+                            )
                         )
                     )
-                )
+                finally:
+                    client.close()
+
                 validated = MeetingOutput.model_validate_json(
                     response.text or ""
                 )
+
                 st.session_state["aimis_output"] = validated.model_dump()
                 st.session_state["aimis_run"] = {
                     "model": model_name,
@@ -271,6 +280,7 @@ if st.button("Generate meeting output"):
                         time.perf_counter() - started, 3
                     )
                 }
+
         except Exception as error:
             st.error(f"Generation failed: {error}")
 
